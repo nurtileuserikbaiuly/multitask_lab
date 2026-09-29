@@ -5,7 +5,7 @@ WORDS = [
     "часы", "дерево", "город", "чай", "птица",
 ]
 
-MEMORIZE_SECONDS = 60
+MEMORIZE_SECONDS = 10
 
 ALPHA = 0.05
 
