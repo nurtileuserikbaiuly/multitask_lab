@@ -15,6 +15,9 @@ test = WordTest()
 if "stage" not in st.session_state:
     st.session_state.stage = "consent"
     st.session_state.tabs = 0
+    st.session_state.sleep = 7.0
+    st.session_state.caffeine = 0
+    st.session_state.fatigue = 3
     st.session_state.score = 0
 
 stage = st.session_state.stage
@@ -23,26 +26,54 @@ st.title("🧠 MultiTask Lab")
 
 # ---------- Экран 1: согласие ----------
 if stage == "consent":
-    st.write("Исследование: влияет ли многозадачность на кратковременную память?")
     st.write(
-        "Участие добровольное. Личные данные не собираются: "
-        "сохраняются только число вкладок и результат теста."
+        "Исследование: влияет ли многозадачность "
+        "(много открытых вкладок и приложений) на кратковременную память?"
+    )
+    st.write(
+        "Участие добровольное и анонимное. Имя и другие личные данные не собираются: "
+        "сохраняются только ответы на несколько вопросов и результат теста."
     )
     if st.button("Согласен, начать"):
-        st.session_state.stage = "tabs"
+        st.session_state.stage = "questions"
         st.rerun()
 
-# ---------- Экран 2: вопрос про вкладки ----------
-elif stage == "tabs":
+# ---------- Экран 2: вопросы ----------
+elif stage == "questions":
+    st.subheader("Несколько вопросов о тебе")
+
     tabs = st.number_input(
-        "Сколько вкладок или приложений у тебя обычно открыто, когда ты учишься?",
+        "Сколько вкладок или приложений у тебя обычно открыто одновременно, "
+        "когда ты учишься? (на телефоне и компьютере вместе)",
         min_value=0,
         max_value=50,
         value=1,
         step=1,
     )
+    sleep = st.number_input(
+        "Сколько часов ты спал(а) прошлой ночью?",
+        min_value=0.0,
+        max_value=14.0,
+        value=7.0,
+        step=0.5,
+    )
+    caffeine = st.radio(
+        "Пил(а) ли ты сегодня кофе, крепкий чай или энергетик?",
+        ["Нет", "Да"],
+        horizontal=True,
+    )
+    fatigue = st.slider(
+        "Насколько ты устал(а) сейчас? (1 - бодр, 5 - очень устал)",
+        min_value=1,
+        max_value=5,
+        value=3,
+    )
+
     if st.button("Далее"):
         st.session_state.tabs = int(tabs)
+        st.session_state.sleep = float(sleep)
+        st.session_state.caffeine = 1 if caffeine == "Да" else 0
+        st.session_state.fatigue = int(fatigue)
         st.session_state.stage = "ready"
         st.rerun()
 
@@ -79,7 +110,14 @@ elif stage == "recall":
     )
     if st.button("Отправить ответ"):
         score = test.count_correct(answer)
-        db.add_response(st.session_state.tabs, score)
+        db.add_response(
+            tabs=st.session_state.tabs,
+            words_correct=score,
+            source="site",
+            sleep_hours=st.session_state.sleep,
+            caffeine=st.session_state.caffeine,
+            fatigue=st.session_state.fatigue,
+        )
         st.session_state.score = score
         st.session_state.stage = "result"
         st.rerun()
@@ -89,7 +127,7 @@ elif stage == "result":
     st.success(
         f"Ты вспомнил {st.session_state.score} слов из {len(WORDS)}. Спасибо за участие!"
     )
-    st.caption(f"Всего участников: {db.count()}")
+    st.caption(f"Ответов с сайта: {db.count('site')}")
     if st.button("Новый участник"):
         st.session_state.stage = "consent"
         st.rerun()
