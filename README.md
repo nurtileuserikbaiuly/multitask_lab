@@ -1,50 +1,58 @@
 # 🧠 MultiTask Lab
 
-Студенческий проект по математической статистике: **влияет ли многозадачность
-(число одновременно открытых вкладок и приложений) на кратковременную память?**
+A student project in mathematical statistics: **does multitasking (the number of
+tabs and apps open at the same time) affect short-term memory?**
 
-Сайт проводит короткий тест на запоминание слов, сохраняет ответы анонимно
-и сам считает статистику по тем же методам, что в отчёте.
+The website runs a short word-memory test, saves the answers anonymously and
+calculates the statistics with the same methods as in the project report.
 
-## Как это работает
+## How it works
 
-1. Участник отвечает на несколько вопросов: число вкладок и приложений, сон,
-   кофеин, усталость.
-2. Ему на 60 секунд показывают 15 слов (у всех один и тот же список).
-3. Он вводит слова, которые запомнил. Программа сама считает верные, поэтому
-   результат не зависит от ответов «со слов».
-4. Данные сохраняются в базу, а страница **Results** показывает статистику.
+1. The participant answers a few questions: the number of open tabs and apps,
+   hours of sleep, caffeine and tiredness.
+2. 15 words are shown for 60 seconds (the same list for everyone).
+3. The participant types the words they remember. The program counts the correct
+   ones automatically, so the result does not depend on self-reported answers.
+4. The answers are saved in a database, and the **Results** page shows the statistics.
 
-## Статистика
+## Statistics
 
-- Описательная статистика: среднее, медиана, минимум, максимум, стандартное отклонение
-- Гистограммы и диаграмма рассеяния с линией регрессии
-- Коэффициент корреляции r и линейная регрессия Y = a + b·X
-- Проверка гипотезы H₀: ρ = 0 против H₁: ρ ≠ 0 (t-тест, уровни α = 0,01 / 0,05 / 0,10)
-- Доверительный интервал для среднего числа слов
+- Descriptive statistics: mean, median, minimum, maximum and standard deviation
+- Histograms and a scatter plot with the regression line
+- Correlation coefficient r and linear regression Y = a + b·X
+- Hypothesis test H₀: ρ = 0 against H₁: ρ ≠ 0 (t-test, significance levels
+  α = 0.01 / 0.05 / 0.10)
+- Confidence interval for the mean number of words remembered
 
-## Данные
+## Data
 
-| Источник | Что это | Строк |
+| Source | What it is | Rows |
 |---|---|---|
-| `survey` | Первый опрос из отчёта (диапазоны заменены серединой, «N+» принято как N) | 34 |
-| `site` | Ответы, собранные через сайт | растёт |
+| `survey` | The first survey from the report (ranges replaced by their midpoints, "N+" taken as N) | 34 |
+| `site` | Answers collected through the website | growing |
 
-Данные опроса загружаются командой `python import_survey.py`.
-Результат на них: r = 0,230, p = 0,190, то есть статистически значимой связи не найдено.
+The survey data are loaded with `python import_survey.py`.
+Result on these data: r = 0.230, p = 0.190, so no statistically significant
+relationship was found.
 
-## Ограничения
+The two sources are analysed separately by default, because they were measured
+in different ways.
 
-- Число вкладок указывает сам участник, оно не измеряется автоматически.
-- Выборка удобная (студенты, согласившиеся пройти тест), а не случайная.
-- Корреляция не доказывает причинность.
-- Данные первого опроса измерены менее точно, чем данные с сайта.
+## Limitations
 
-## Запуск на своём компьютере
+- The number of tabs and apps is reported by the participant, not measured automatically.
+- The sample is a convenience sample (students who agreed to take the test), not a random one.
+- Correlation does not prove causation.
+- The first survey was measured less precisely than the website data: it used
+  different word lists and some answers were reported by the respondents.
+- Words must be typed in the same form as in the list ("apple" is counted,
+  "apples" is not). Capital letters do not matter.
+
+## Run it on your computer
 
 ```bash
-git clone https://github.com/ВАШ_НИК/multitask-lab.git
-cd multitask-lab
+git clone https://github.com/nurtileuserikbaiuly/multitask_lab.git
+cd multitask_lab
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
@@ -52,19 +60,19 @@ python import_survey.py
 streamlit run app.py
 ```
 
-## Структура проекта
+## Project structure
 
-| Файл | Назначение |
+| File | Purpose |
 |---|---|
-| `app.py` | Страница теста |
-| `pages/1_Results.py` | Страница результатов |
-| `config.py` | Настройки: слова, время, уровень значимости |
-| `database.py` | Работа с базой данных SQLite |
-| `logic.py` | Проверка ответов на запоминание слов |
-| `stats.py` | Расчёты: корреляция, регрессия, проверка гипотезы |
-| `charts.py` | Графики |
-| `import_survey.py` | Загрузка данных первого опроса |
+| `app.py` | The test page |
+| `pages/1_Results.py` | The results page |
+| `config.py` | Settings: words, time, significance level |
+| `database.py` | Working with the SQLite database |
+| `logic.py` | Checking the words the participant remembered |
+| `stats.py` | Calculations: correlation, regression, hypothesis test |
+| `charts.py` | Charts |
+| `import_survey.py` | Loading the data of the first survey |
 
-## Авторы
+## Authors
 
 Serikbaiuly Nurtileu, Askarkyzy Ulpan   - Narxoz university
