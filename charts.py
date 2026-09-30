@@ -2,12 +2,12 @@ import plotly.graph_objects as go
 
 
 def histogram(series, title, xlabel):
-    """Гистограмма одной переменной."""
+    """Histogram of one variable."""
     fig = go.Figure(go.Histogram(x=series, nbinsx=10))
     fig.update_layout(
         title=title,
         xaxis_title=xlabel,
-        yaxis_title="Количество участников",
+        yaxis_title="Number of participants",
         bargap=0.05,
         margin=dict(l=10, r=10, t=50, b=10),
         height=320,
@@ -16,7 +16,7 @@ def histogram(series, title, xlabel):
 
 
 def scatter_with_line(x, y, slope, intercept, xlabel, ylabel, r):
-    """Диаграмма рассеяния с линией регрессии."""
+    """Scatter plot with the regression line."""
     x_min, x_max = float(x.min()), float(x.max())
     fig = go.Figure()
     fig.add_trace(
@@ -24,7 +24,7 @@ def scatter_with_line(x, y, slope, intercept, xlabel, ylabel, r):
             x=x,
             y=y,
             mode="markers",
-            name="Участники",
+            name="Participants",
             marker=dict(size=9, opacity=0.6),
         )
     )
@@ -37,7 +37,7 @@ def scatter_with_line(x, y, slope, intercept, xlabel, ylabel, r):
         )
     )
     fig.update_layout(
-        title=f"Диаграмма рассеяния (r = {r:.3f})",
+        title=f"Scatter plot (r = {r:.3f})",
         xaxis_title=xlabel,
         yaxis_title=ylabel,
         margin=dict(l=10, r=10, t=50, b=10),

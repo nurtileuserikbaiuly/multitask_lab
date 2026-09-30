@@ -5,14 +5,14 @@ from config import ALPHA
 
 
 class CorrelationAnalysis:
-    """Связь между двумя числовыми переменными: X (вкладки) и Y (слова)."""
+    """Relationship between two numeric variables: X (tabs) and Y (words)."""
 
     def __init__(self, x, y, alpha=ALPHA):
         data = pd.DataFrame({"x": x, "y": y}).dropna()
         if len(data) < 3:
-            raise ValueError("Для анализа нужно минимум 3 наблюдения.")
+            raise ValueError("At least 3 observations are needed for the analysis.")
         if data["x"].nunique() < 2 or data["y"].nunique() < 2:
-            raise ValueError("Значения X и Y не должны быть все одинаковыми.")
+            raise ValueError("X and Y values must not all be the same.")
 
         self.x = data["x"].astype(float)
         self.y = data["y"].astype(float)
@@ -20,7 +20,7 @@ class CorrelationAnalysis:
         self.n = len(data)
 
     def describe(self):
-        """Описательная статистика: n, среднее, медиана, min, max, σ."""
+        """Descriptive statistics: n, mean, median, min, max, standard deviation."""
         rows = {}
         for name, s in (("X", self.x), ("Y", self.y)):
             rows[name] = {
@@ -34,7 +34,7 @@ class CorrelationAnalysis:
         return pd.DataFrame(rows).T
 
     def regression(self):
-        """Линейная регрессия Y = intercept + slope * X, а также r, R², p."""
+        """Linear regression Y = intercept + slope * X, plus r, R squared and p."""
         res = stats.linregress(self.x, self.y)
         return {
             "slope": res.slope,
@@ -45,7 +45,7 @@ class CorrelationAnalysis:
         }
 
     def hypothesis_test(self):
-        """Проверка H0: ρ = 0 против H1: ρ != 0 (t-тест для корреляции)."""
+        """Test of H0: rho = 0 against H1: rho != 0 (t-test for correlation)."""
         reg = self.regression()
         r = reg["r"]
         df = self.n - 2
@@ -60,7 +60,7 @@ class CorrelationAnalysis:
         }
 
     def confidence_interval(self, which="y", level=0.95):
-        """Доверительный интервал для среднего X или Y."""
+        """Confidence interval for the mean of X or Y."""
         s = self.y if which == "y" else self.x
         low, high = stats.t.interval(
             level, self.n - 1, loc=s.mean(), scale=stats.sem(s)
@@ -69,38 +69,38 @@ class CorrelationAnalysis:
 
     @staticmethod
     def strength(r):
-        """Словесное описание силы связи."""
+        """Verbal description of the strength of the relationship."""
         a = abs(r)
         if a < 0.1:
-            return "практически отсутствует"
+            return "negligible"
         if a < 0.3:
-            return "слабая"
+            return "weak"
         if a < 0.7:
-            return "умеренная"
-        return "сильная"
+            return "moderate"
+        return "strong"
 
     def conclusion(self):
-        """Автоматический текстовый вывод."""
+        """Automatic written conclusion."""
         reg = self.regression()
         test = self.hypothesis_test()
         r = reg["r"]
-        direction = "положительная" if r > 0 else "отрицательная"
+        direction = "positive" if r > 0 else "negative"
 
         if test["significant"]:
             main = (
-                f"Так как p = {test['p']:.3f} < α = {self.alpha}, гипотеза об "
-                f"отсутствии связи отвергается: найдена статистически значимая "
-                f"{direction} связь ({self.strength(r)}, r = {r:.3f})."
+                f"Since p = {test['p']:.3f} < α = {self.alpha:.2f}, the hypothesis "
+                f"of no relationship is rejected: a statistically significant "
+                f"{direction} relationship was found ({self.strength(r)}, r = {r:.3f})."
             )
         else:
             main = (
-                f"Так как p = {test['p']:.3f} ≥ α = {self.alpha}, гипотеза об "
-                f"отсутствии связи не отвергается: статистически значимой связи "
-                f"не найдено (r = {r:.3f}, {self.strength(r)})."
+                f"Since p = {test['p']:.3f} ≥ α = {self.alpha:.2f}, the hypothesis "
+                f"of no relationship is not rejected: no statistically significant "
+                f"relationship was found (r = {r:.3f}, {self.strength(r)})."
             )
 
         caveat = (
-            " Корреляция не доказывает причинность, а отсутствие значимости "
-            "не доказывает, что связи нет: возможно, выборка мала."
+            " Correlation does not prove causation, and a lack of significance "
+            "does not prove that there is no relationship: the sample may be too small."
         )
         return main + caveat

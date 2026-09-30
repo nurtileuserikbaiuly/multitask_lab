@@ -1,8 +1,8 @@
 
 WORDS = [
-    "яблоко", "книга", "река", "стол", "солнце",
-    "машина", "окно", "гора", "письмо", "мост",
-    "часы", "дерево", "город", "чай", "птица",
+    "apple", "book", "river", "table", "sun",
+    "car", "window", "mountain", "letter", "bridge",
+    "clock", "tree", "city", "tea", "bird",
 ]
 
 MEMORIZE_SECONDS = 10
