@@ -2,25 +2,98 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 
 import pandas as pd
+import requests
 
 from config import DB_PATH
 
-# Алматы: UTC+5 (так время будет верным и на сервере в интернете)
+# Almaty: UTC+5 (so the time is correct on an internet server too)
 ALMATY = timezone(timedelta(hours=5))
+
+COLUMNS = [
+    "id",
+    "source",
+    "tabs",
+    "words_correct",
+    "sleep_hours",
+    "caffeine",
+    "fatigue",
+    "hour_of_day",
+    "created_at",
+]
+
+
+def get_supabase_credentials():
+    """Returns (url, key) if Supabase is configured in the Streamlit secrets."""
+    try:
+        import streamlit as st
+
+        cfg = st.secrets["supabase"]
+        return cfg["url"], cfg["key"]
+    except Exception:
+        return None
+
+
+class SupabaseStore:
+    """Stores the answers in a Supabase table through its web (REST) interface."""
+
+    PAGE_SIZE = 1000
+
+    def __init__(self, url, key):
+        self.endpoint = url.rstrip("/") + "/rest/v1/responses"
+        self.headers = {
+            "apikey": key,
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal",
+        }
+
+    def insert(self, row):
+        response = requests.post(
+            self.endpoint, json=row, headers=self.headers, timeout=15
+        )
+        response.raise_for_status()
+
+    def select(self, source=None):
+        rows, offset = [], 0
+        while True:
+            params = {
+                "select": "*",
+                "order": "id.asc",
+                "limit": self.PAGE_SIZE,
+                "offset": offset,
+            }
+            if source is not None:
+                params["source"] = f"eq.{source}"
+            response = requests.get(
+                self.endpoint, params=params, headers=self.headers, timeout=15
+            )
+            response.raise_for_status()
+            page = response.json()
+            rows.extend(page)
+            if len(page) < self.PAGE_SIZE:
+                return rows
+            offset += self.PAGE_SIZE
 
 
 class Database:
-    """Работа с базой данных: сохраняем и читаем ответы."""
+    """Saves and reads the answers.
+
+    If Supabase is configured in the secrets, the answers go to the cloud.
+    Otherwise they are saved in a local SQLite file (data.db).
+    """
 
     def __init__(self, path=DB_PATH):
         self.path = path
-        self.create_table()
+        credentials = get_supabase_credentials()
+        self.remote = SupabaseStore(*credentials) if credentials else None
+        if self.remote is None:
+            self.create_table()
 
+    # ---------- local SQLite ----------
     def connect(self):
         return sqlite3.connect(self.path)
 
     def create_table(self):
-        """Создаёт таблицу, если её ещё нет."""
+        """Creates the local table if it does not exist yet."""
         conn = self.connect()
         conn.execute(
             """
@@ -40,6 +113,7 @@ class Database:
         conn.commit()
         conn.close()
 
+    # ---------- public methods ----------
     def add_response(
         self,
         tabs,
@@ -49,14 +123,27 @@ class Database:
         caffeine=None,
         fatigue=None,
     ):
-        """Сохраняет один ответ.
+        """Saves one response.
 
-        source: "site" (тест на сайте) или "survey" (опрос из отчёта).
-        caffeine: 1 (да) или 0 (нет). Пустые поля хранятся как NULL.
-        Время суток записывается само, только для ответов с сайта.
+        source: "site" (website test) or "survey" (survey from the report).
+        caffeine: 1 (yes) or 0 (no). Empty fields are stored as NULL.
+        The hour of the day is recorded automatically, only for website responses.
         """
         now = datetime.now(ALMATY)
-        hour = now.hour if source == "site" else None
+        row = {
+            "source": source,
+            "tabs": tabs,
+            "words_correct": words_correct,
+            "sleep_hours": sleep_hours,
+            "caffeine": caffeine,
+            "fatigue": fatigue,
+            "hour_of_day": now.hour if source == "site" else None,
+            "created_at": now.isoformat(timespec="seconds"),
+        }
+
+        if self.remote is not None:
+            self.remote.insert(row)
+            return
 
         conn = self.connect()
         conn.execute(
@@ -64,24 +151,19 @@ class Database:
             INSERT INTO responses
             (source, tabs, words_correct, sleep_hours, caffeine, fatigue,
              hour_of_day, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (:source, :tabs, :words_correct, :sleep_hours, :caffeine,
+                    :fatigue, :hour_of_day, :created_at)
             """,
-            (
-                source,
-                tabs,
-                words_correct,
-                sleep_hours,
-                caffeine,
-                fatigue,
-                hour,
-                now.isoformat(timespec="seconds"),
-            ),
+            row,
         )
         conn.commit()
         conn.close()
 
     def get_all(self, source=None):
-        """Возвращает ответы в виде таблицы pandas (можно только один источник)."""
+        """Returns the responses as a pandas table (optionally one source only)."""
+        if self.remote is not None:
+            return pd.DataFrame(self.remote.select(source), columns=COLUMNS)
+
         conn = self.connect()
         if source is None:
             df = pd.read_sql("SELECT * FROM responses", conn)
@@ -93,7 +175,10 @@ class Database:
         return df
 
     def count(self, source=None):
-        """Сколько ответов собрано (всего или по источнику)."""
+        """How many responses were collected (in total or for one source)."""
+        if self.remote is not None:
+            return len(self.remote.select(source))
+
         conn = self.connect()
         if source is None:
             result = conn.execute("SELECT COUNT(*) FROM responses").fetchone()[0]
