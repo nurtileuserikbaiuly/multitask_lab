@@ -5,7 +5,7 @@ WORDS = [
     "clock", "tree", "city", "tea", "bird",
 ]
 
-MEMORIZE_SECONDS = 10
+MEMORIZE_SECONDS = 60
 
 ALPHA = 0.05
 
